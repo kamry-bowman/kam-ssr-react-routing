@@ -2,8 +2,8 @@ let path = require('path');
 let webpack = require('webpack');
 let nodeExternals = require('webpack-node-externals');
 
-let broswerConfig = {
-  entry: './src/broswer/index.js',
+let browserConfig = {
+  entry: './src/browser/index.js',
   output: {
     path: path.resolve(__dirname, 'public'),
     filename: 'bundle.js',
@@ -14,7 +14,7 @@ let broswerConfig = {
   },
   plugins: [
     new webpack.DefinePlugin({
-      __isBroswer__: 'true',
+      __isBrowser__: 'true',
     }),
   ],
 };
@@ -33,9 +33,9 @@ let serverConfig = {
   },
   plugins: [
     new webpack.DefinePlugin({
-      __isBroswer__: 'false',
+      __isBrowser__: 'false',
     }),
   ],
 };
 
-module.exports = [broswerConfig, serverConfig];
+module.exports = [browserConfig, serverConfig];
