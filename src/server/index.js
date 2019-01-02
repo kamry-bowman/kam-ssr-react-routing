@@ -2,11 +2,10 @@ import express from 'express';
 import cors from 'cors';
 import { renderToString } from 'react-dom/server';
 import serialize from 'serialize-javascript';
-import { matchPath } from 'react-router-dom';
+import { StaticRouter, matchPath } from 'react-router-dom';
 import routes from '../shared/routes';
 import App from '../shared/App';
 import React from 'react';
-import { fetchPopularRepos } from '../shared/api';
 const app = express();
 
 app.use(cors());
@@ -22,7 +21,12 @@ app.get('*', (req, res, next) => {
 
   return promise
     .then(data => {
-      const markup = renderToString(<App data={data} />);
+      const context = { data };
+      const markup = renderToString(
+        <StaticRouter location={req.url} context={context}>
+          <App />
+        </StaticRouter>
+      );
 
       res.send(`
     <!DOCTYPE html>

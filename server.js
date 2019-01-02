@@ -104,8 +104,6 @@ var _react = __webpack_require__(0);
 
 var _react2 = _interopRequireDefault(_react);
 
-var _api = __webpack_require__(8);
-
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var app = (0, _express2.default)();
@@ -122,7 +120,12 @@ app.get('*', function (req, res, next) {
   var promise = activeRoute.fetchInitialData ? activeRoute.fetchInitialData(req.path) : Promise.resolve();
 
   return promise.then(function (data) {
-    var markup = (0, _server.renderToString)(_react2.default.createElement(_App2.default, { data: data }));
+    var context = { data: data };
+    var markup = (0, _server.renderToString)(_react2.default.createElement(
+      _reactRouterDom.StaticRouter,
+      { location: req.url, context: context },
+      _react2.default.createElement(_App2.default, null)
+    ));
 
     res.send('\n    <!DOCTYPE html>\n      <html>\n        <head>\n          <title>SSR with RR</title>\n          <script src="/bundle.js" defer></script>\n          <script>window.__INITIAL_DATA__ = ' + (0, _serializeJavascript2.default)(data) + '</script>\n        </head>\n\n        <body>\n          <div id="app">' + markup + '</div>\n        </body>\n    ');
   }).catch(next);
@@ -167,17 +170,31 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 var _react = __webpack_require__(0);
 
 var _react2 = _interopRequireDefault(_react);
 
-var _Grid = __webpack_require__(7);
+var _routes = __webpack_require__(11);
 
-var _Grid2 = _interopRequireDefault(_Grid);
+var _routes2 = _interopRequireDefault(_routes);
+
+var _reactRouterDom = __webpack_require__(10);
+
+var _Navbar = __webpack_require__(13);
+
+var _Navbar2 = _interopRequireDefault(_Navbar);
+
+var _NoMatch = __webpack_require__(14);
+
+var _NoMatch2 = _interopRequireDefault(_NoMatch);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _objectWithoutProperties(obj, keys) { var target = {}; for (var i in obj) { if (keys.indexOf(i) >= 0) continue; if (!Object.prototype.hasOwnProperty.call(obj, i)) continue; target[i] = obj[i]; } return target; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -200,7 +217,29 @@ var App = function (_Component) {
       return _react2.default.createElement(
         'div',
         null,
-        _react2.default.createElement(_Grid2.default, { data: this.props.data })
+        _react2.default.createElement(_Navbar2.default, null),
+        _react2.default.createElement(
+          _reactRouterDom.Switch,
+          null,
+          _routes2.default.map(function (_ref) {
+            var path = _ref.path,
+                exact = _ref.exact,
+                C = _ref.component,
+                rest = _objectWithoutProperties(_ref, ['path', 'exact', 'component']);
+
+            return _react2.default.createElement(_reactRouterDom.Route, {
+              key: path,
+              path: path,
+              exact: exact,
+              render: function render(ownProps) {
+                return _react2.default.createElement(C, _extends({}, ownProps, rest));
+              }
+            });
+          }),
+          _react2.default.createElement(_reactRouterDom.Route, { render: function render(ownProps) {
+              return _react2.default.createElement(_NoMatch2.default, ownProps);
+            } })
+        )
       );
     }
   }]);
@@ -238,19 +277,79 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 var Grid = function (_Component) {
   _inherits(Grid, _Component);
 
-  function Grid() {
+  function Grid(props) {
     _classCallCheck(this, Grid);
 
-    return _possibleConstructorReturn(this, (Grid.__proto__ || Object.getPrototypeOf(Grid)).apply(this, arguments));
+    var _this = _possibleConstructorReturn(this, (Grid.__proto__ || Object.getPrototypeOf(Grid)).call(this, props));
+
+    var repos = void 0;
+    if (false) {
+      repos = window.__INITIAL_DATA__;
+      delete window.__INITIAL_DATA__;
+    } else {
+      repos = props.staticContext.data;
+    }
+
+    _this.state = {
+      repos: repos,
+      loading: repos ? false : true
+    };
+
+    _this.fetchRepos = _this.fetchRepos.bind(_this);
+    return _this;
   }
 
   _createClass(Grid, [{
+    key: 'componentDidMount',
+    value: function componentDidMount() {
+      if (!this.state.repos) {
+        this.fetchRepos(this.props.match.params.id);
+      }
+    }
+  }, {
+    key: 'componentDidUpdate',
+    value: function componentDidUpdate(prevProps, prevState) {
+      if (prevProps.match.params.id !== this.props.match.params.id) {
+        this.fetchRepos(this.props.match.params.id);
+      }
+    }
+  }, {
+    key: 'fetchRepos',
+    value: function fetchRepos(lang) {
+      var _this2 = this;
+
+      console.log(this.props);
+      this.setState(function () {
+        return {
+          loading: true
+        };
+      });
+
+      this.props.fetchInitialData(lang).then(function (repos) {
+        return _this2.setState(function () {
+          return {
+            repos: repos,
+            loading: false
+          };
+        });
+      });
+    }
+  }, {
     key: 'render',
     value: function render() {
-      var repos = this.props.data || [];
-      console.log(this.props);
-      console.log(repos instanceof Array);
+      var _state = this.state,
+          _state$repos = _state.repos,
+          repos = _state$repos === undefined ? [] : _state$repos,
+          loading = _state.loading;
 
+
+      if (loading === true) {
+        return _react2.default.createElement(
+          'p',
+          null,
+          'loading'
+        );
+      }
       return _react2.default.createElement(
         'ul',
         { style: { display: 'flex', flexWrap: 'wrap' } },
@@ -404,6 +503,76 @@ function Home() {
     'div',
     null,
     'Select a Language'
+  );
+}
+
+/***/ }),
+/* 13 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = Navbar;
+
+var _react = __webpack_require__(0);
+
+var _react2 = _interopRequireDefault(_react);
+
+var _reactRouterDom = __webpack_require__(10);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function Navbar() {
+  var languages = [{ name: 'All', param: 'all' }, { name: 'JavaScript', param: 'javascript' }, { name: 'Ruby', param: 'ruby' }, { name: 'Python', param: 'python' }, { name: 'Java', param: 'java' }];
+  return _react2.default.createElement(
+    'ul',
+    null,
+    languages.map(function (_ref) {
+      var name = _ref.name,
+          param = _ref.param;
+      return _react2.default.createElement(
+        'li',
+        { key: param },
+        _react2.default.createElement(
+          _reactRouterDom.NavLink,
+          {
+            activeStyle: { fontWeight: 'bold' },
+            to: '/popular/' + param
+          },
+          name
+        )
+      );
+    })
+  );
+}
+
+/***/ }),
+/* 14 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = NoMatch;
+
+var _react = __webpack_require__(0);
+
+var _react2 = _interopRequireDefault(_react);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function NoMatch() {
+  return _react2.default.createElement(
+    'div',
+    null,
+    'Four Oh Four'
   );
 }
 
