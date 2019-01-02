@@ -90,6 +90,12 @@ var _serializeJavascript = __webpack_require__(5);
 
 var _serializeJavascript2 = _interopRequireDefault(_serializeJavascript);
 
+var _reactRouterDom = __webpack_require__(10);
+
+var _routes = __webpack_require__(11);
+
+var _routes2 = _interopRequireDefault(_routes);
+
 var _App = __webpack_require__(6);
 
 var _App2 = _interopRequireDefault(_App);
@@ -109,12 +115,17 @@ app.use((0, _cors2.default)());
 app.use(_express2.default.static('public'));
 
 app.get('*', function (req, res, next) {
-  return (0, _api.fetchPopularRepos)().then(function (data) {
-    console.log(data instanceof Array);
+  var activeRoute = _routes2.default.find(function (route) {
+    return (0, _reactRouterDom.matchPath)(req.url, route);
+  }) || {};
+
+  var promise = activeRoute.fetchInitialData ? activeRoute.fetchInitialData(req.path) : Promise.resolve();
+
+  return promise.then(function (data) {
     var markup = (0, _server.renderToString)(_react2.default.createElement(_App2.default, { data: data }));
 
     res.send('\n    <!DOCTYPE html>\n      <html>\n        <head>\n          <title>SSR with RR</title>\n          <script src="/bundle.js" defer></script>\n          <script>window.__INITIAL_DATA__ = ' + (0, _serializeJavascript2.default)(data) + '</script>\n        </head>\n\n        <body>\n          <div id="app">' + markup + '</div>\n        </body>\n    ');
-  });
+  }).catch(next);
 });
 
 app.listen(3000, function () {
@@ -325,6 +336,76 @@ function fetchPopularRepos() {
 /***/ (function(module, exports) {
 
 module.exports = require("isomorphic-fetch");
+
+/***/ }),
+/* 10 */
+/***/ (function(module, exports) {
+
+module.exports = require("react-router-dom");
+
+/***/ }),
+/* 11 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _Home = __webpack_require__(12);
+
+var _Home2 = _interopRequireDefault(_Home);
+
+var _Grid = __webpack_require__(7);
+
+var _Grid2 = _interopRequireDefault(_Grid);
+
+var _api = __webpack_require__(8);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+var routes = [{
+  path: '/',
+  exact: true,
+  component: _Home2.default
+}, {
+  path: '/popular/:id',
+  component: _Grid2.default,
+  fetchInitialData: function fetchInitialData() {
+    var path = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '';
+    return (0, _api.fetchPopularRepos)(path.split('/').pop());
+  }
+}];
+
+exports.default = routes;
+
+/***/ }),
+/* 12 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = Home;
+
+var _react = __webpack_require__(0);
+
+var _react2 = _interopRequireDefault(_react);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function Home() {
+  return _react2.default.createElement(
+    'div',
+    null,
+    'Select a Language'
+  );
+}
 
 /***/ })
 /******/ ]);
